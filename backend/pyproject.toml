@@ -1,0 +1,11 @@
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+# Basado en PEP 8 (estándar oficial de Python) + convenciones de FastAPI:
+# snake_case para funciones/variables, PascalCase para clases (modelos y schemas).
+select = ["E", "F", "W", "I", "N"]
+ignore = ["E501"]  # el largo de línea ya se controla con line-length
+
+[tool.ruff.lint.pep8-naming]
