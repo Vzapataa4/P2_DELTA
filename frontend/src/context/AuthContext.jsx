@@ -1,7 +1,6 @@
-import { createContext, useContext, useState } from "react";
+import { useState } from "react";
 import { api } from "../api/client";
-
-const AuthContext = createContext(null);
+import { AuthContext } from "./sessionContext";
 
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(() => {
@@ -25,10 +24,4 @@ export function AuthProvider({ children }) {
   return (
     <AuthContext.Provider value={{ session, login, logout }}>{children}</AuthContext.Provider>
   );
-}
-
-export function useAuth() {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuth debe usarse dentro de <AuthProvider>");
-  return ctx;
 }

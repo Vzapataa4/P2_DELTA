@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/useAuth";
 
 export default function Login() {
   const [correo, setCorreo] = useState("");
@@ -15,8 +15,8 @@ export default function Login() {
     setError("");
     setCargando(true);
     try {
-      await login(correo, contrasena);
-      navigate("/");
+      const sesion = await login(correo, contrasena);
+      navigate(sesion.rol === "administrador" ? "/" : "/inventario");
     } catch (err) {
       setError(err.message);
     } finally {

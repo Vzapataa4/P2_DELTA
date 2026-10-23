@@ -2,6 +2,12 @@
 // consistente en toda la app (ver RNF de Manejo de fallos en la Wiki).
 const BASE_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 
+function qs(params = {}) {
+  const q = new URLSearchParams(Object.entries(params).filter(([, v]) => v !== "" && v != null));
+  const texto = q.toString();
+  return texto ? `?${texto}` : "";
+}
+
 async function request(path, { method = "GET", body, token } = {}) {
   const headers = { "Content-Type": "application/json" };
   if (token) headers["Authorization"] = `Bearer ${token}`;
@@ -72,7 +78,14 @@ export const api = {
   getRecetas: (token) => request("/api/recetas", { token }),
   crearReceta: (token, data) => request("/api/recetas", { method: "POST", body: data, token }),
   importarExcelReceta: (token, file) => requestFile("/api/recetas/importar-excel", { file, token }),
-  getVentas: (token) => request("/api/ventas", { token }),
+  getVentas: (token, filtros) => request(`/api/ventas${qs(filtros)}`, { token }),
+  getRanking: (token, limite = 10) => request(`/api/ventas/ranking${qs({ limite })}`, { token }),
+  getRentabilidad: (token) => request("/api/recetas/rentabilidad", { token }),
+  getRecetasSugeridas: (token) => request("/api/ia/recetas-sugeridas", { token }),
+  actualizarCantidadInsumo: (token, id, cantidad) =>
+    request(`/api/insumos/${id}/cantidad`, { method: "PATCH", body: { cantidad_disponible: cantidad }, token }),
+  getUsuarios: (token) => request("/api/auth/usuarios", { token }),
+  crearEmpleado: (token, data) => request("/api/auth/empleados", { method: "POST", body: data, token }),
   registrarVenta: (token, data) => request("/api/ventas", { method: "POST", body: data, token }),
   registrarVentasLote: (token, data) => request("/api/ventas/lote", { method: "POST", body: data, token }),
   importarFactura: (token, file) => requestFile("/api/ventas/importar-factura", { file, token }),

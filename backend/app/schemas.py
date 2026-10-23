@@ -139,3 +139,53 @@ class RecomendacionOut(BaseModel):
     insumo: str
     mensaje: str
     fuente: str  # "ia" o "regla" (fallback si la IA no respondió)
+
+
+# ================= Sprint 2 =================
+# ---------- HU-02 Crear cuenta de empleado ----------
+class EmpleadoCreate(BaseModel):
+    nombre: str = Field(min_length=1)
+    correo: EmailStr
+    contrasena: str = Field(min_length=8)
+
+
+class UsuarioOut(BaseModel):
+    id: int
+    nombre: str
+    correo: str
+    rol: str
+
+
+# ---------- HU-06 Actualizar cantidad de insumo ----------
+class InsumoCantidadUpdate(BaseModel):
+    cantidad_disponible: float = Field(ge=0)
+
+
+# ---------- HU-15 Rentabilidad por producto ----------
+class RentabilidadOut(BaseModel):
+    receta: str
+    costo_unitario: float
+    precio_venta: float
+    ganancia_unitaria: float
+    margen_pct: float
+    unidades_vendidas: int
+    ganancia_total: float
+
+
+# ---------- HU-17 Ranking de productos ----------
+class RankingProductoOut(BaseModel):
+    posicion: int
+    producto: str
+    unidades: int
+    ingresos: float
+
+
+# ---------- HU-21 Sugerir recetas a producir ----------
+class RecetaSugeridaOut(BaseModel):
+    receta: str
+    unidades_producibles: int
+    insumo_limitante: Optional[str] = None
+    unidades_vendidas_30d: int
+    ganancia_unitaria: float
+    motivo: str
+    fuente: str  # "regla": hoy se calcula con una regla sobre inventario y ventas

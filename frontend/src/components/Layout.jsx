@@ -1,12 +1,17 @@
 import { NavLink, useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/useAuth";
 
+// "soloAdmin": el backend también lo valida (RNF de Roles y permisos); aquí
+// solo se oculta para que el empleado no vea opciones que no puede usar.
 const NAV_ITEMS = [
-  { to: "/", label: "Panel principal", end: true },
+  { to: "/", label: "Panel principal", end: true, soloAdmin: true },
   { to: "/inventario", label: "Inventario" },
-  { to: "/ventas", label: "Registrar Venta" },
-  { to: "/recetas", label: "Recetas" },
-  { to: "/ia", label: "Recomendaciones IA" },
+  { to: "/ventas", label: "Registrar Venta", soloAdmin: true },
+  { to: "/historial", label: "Historial de ventas", soloAdmin: true },
+  { to: "/recetas", label: "Recetas", soloAdmin: true },
+  { to: "/analisis", label: "Rentabilidad y ranking", soloAdmin: true },
+  { to: "/ia", label: "Recomendaciones IA", soloAdmin: true },
+  { to: "/usuarios", label: "Usuarios", soloAdmin: true },
 ];
 
 export default function Layout({ children }) {
@@ -27,7 +32,7 @@ export default function Layout({ children }) {
             {session?.nombre} · {session?.rol}
           </div>
         </div>
-        {NAV_ITEMS.map((item) => (
+        {NAV_ITEMS.filter((item) => !item.soloAdmin || session?.rol === "administrador").map((item) => (
           <NavLink
             key={item.to}
             to={item.to}

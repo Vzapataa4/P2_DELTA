@@ -65,3 +65,21 @@ def registrar_insumo(
     db.commit()
     db.refresh(insumo)
     return _to_out(insumo)
+
+
+@router.patch("/{insumo_id}/cantidad", response_model=schemas.InsumoOut)
+def actualizar_cantidad(
+    insumo_id: int,
+    data: schemas.InsumoCantidadUpdate,
+    db: Session = Depends(get_db),
+    _user: models.Usuario = Depends(auth.require_admin),
+):
+    """HU-06 Actualizar cantidad de insumo (ej. al recibir una compra o
+    corregir un conteo físico). Solo administrador."""
+    insumo = db.get(models.Insumo, insumo_id)
+    if not insumo:
+        raise HTTPException(status_code=404, detail="El insumo no existe")
+    insumo.cantidad_disponible = data.cantidad_disponible
+    db.commit()
+    db.refresh(insumo)
+    return _to_out(insumo)

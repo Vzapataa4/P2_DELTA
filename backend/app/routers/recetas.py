@@ -23,6 +23,35 @@ def _to_out(r: models.Receta) -> schemas.RecetaOut:
     )
 
 
+@router.get("/rentabilidad", response_model=list[schemas.RentabilidadOut])
+def rentabilidad_por_producto(
+    db: Session = Depends(get_db), _user: models.Usuario = Depends(auth.require_admin)
+):
+    """HU-15 Ver rentabilidad por producto: costo, precio, ganancia y
+    margen unitarios, más la ganancia acumulada según lo ya vendido."""
+    vendidas = {}
+    for v in db.query(models.Venta).all():
+        vendidas[v.receta_id] = vendidas.get(v.receta_id, 0) + v.cantidad
+    filas = []
+    for r in db.query(models.Receta).all():
+        costo = r.costo_total
+        precio = r.precio_venta_efectivo
+        ganancia = precio - costo
+        unidades = vendidas.get(r.id, 0)
+        filas.append(
+            schemas.RentabilidadOut(
+                receta=r.nombre,
+                costo_unitario=round(costo, 2),
+                precio_venta=round(precio, 2),
+                ganancia_unitaria=round(ganancia, 2),
+                margen_pct=round(ganancia / precio * 100, 1) if precio else 0.0,
+                unidades_vendidas=unidades,
+                ganancia_total=round(ganancia * unidades, 2),
+            )
+        )
+    return sorted(filas, key=lambda f: (-f.margen_pct, f.receta))
+
+
 @router.get("", response_model=list[schemas.RecetaOut])
 def listar_recetas(
     db: Session = Depends(get_db), _user: models.Usuario = Depends(auth.get_current_user)

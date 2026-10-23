@@ -1,4 +1,8 @@
 
+from collections import defaultdict
+from datetime import date, datetime, time
+from typing import Optional
+
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
@@ -10,10 +14,24 @@ router = APIRouter(prefix="/api/ventas", tags=["ventas"])
 
 @router.get("", response_model=list[schemas.VentaOut])
 def listar_ventas(
-    db: Session = Depends(get_db), _user: models.Usuario = Depends(auth.require_admin)
+    desde: Optional[date] = None,
+    hasta: Optional[date] = None,
+    distribuidor: Optional[str] = None,
+    db: Session = Depends(get_db),
+    _user: models.Usuario = Depends(auth.require_admin),
 ):
-    """HU-11 (backlog) / soporte a HU-16 Ver panel principal."""
-    ventas = db.query(models.Venta).order_by(models.Venta.fecha.desc()).all()
+    """HU-11 Ver historial de ventas, con filtros opcionales por rango de
+    fechas (desde/hasta, inclusivos) y por distribuidor."""
+    if desde and hasta and desde > hasta:
+        raise HTTPException(status_code=400, detail="La fecha 'desde' no puede ser posterior a 'hasta'")
+    q = db.query(models.Venta)
+    if desde:
+        q = q.filter(models.Venta.fecha >= datetime.combine(desde, time.min))
+    if hasta:
+        q = q.filter(models.Venta.fecha <= datetime.combine(hasta, time.max))
+    if distribuidor:
+        q = q.filter(models.Venta.distribuidor_nombre.ilike(distribuidor))
+    ventas = q.order_by(models.Venta.fecha.desc()).all()
     return [
         schemas.VentaOut(
             id=v.id,
@@ -125,3 +143,27 @@ async def importar_factura(
     contenido = await file.read()
     recetas_conocidas = [r.nombre for r in db.query(models.Receta).all()]
     return importaciones.extraer_factura_desde_imagen(contenido, file.content_type, recetas_conocidas)
+
+
+@router.get("/ranking", response_model=list[schemas.RankingProductoOut])
+def ranking_productos(
+    limite: int = 10,
+    db: Session = Depends(get_db),
+    _user: models.Usuario = Depends(auth.require_admin),
+):
+    """HU-17 Ranking de productos: los más vendidos por unidades (el
+    desempate es por ingresos)."""
+    if limite < 1 or limite > 50:
+        raise HTTPException(status_code=400, detail="El límite debe estar entre 1 y 50")
+    unidades = defaultdict(int)
+    ingresos = defaultdict(float)
+    for v in db.query(models.Venta).all():
+        unidades[v.receta.nombre] += v.cantidad
+        ingresos[v.receta.nombre] += v.total
+    ordenado = sorted(unidades, key=lambda n: (-unidades[n], -ingresos[n], n))[:limite]
+    return [
+        schemas.RankingProductoOut(
+            posicion=i, producto=n, unidades=unidades[n], ingresos=round(ingresos[n], 2)
+        )
+        for i, n in enumerate(ordenado, start=1)
+    ]

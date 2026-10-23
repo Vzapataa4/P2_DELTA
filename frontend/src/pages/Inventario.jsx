@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/useAuth";
 import { api } from "../api/client";
 
 const UNIDADES = ["gr", "ml", "unid"];
@@ -38,6 +38,25 @@ export default function Inventario() {
     proveedor_nombre: "",
   });
   const [formError, setFormError] = useState("");
+  const esAdmin = session.rol === "administrador";
+  const [editandoId, setEditandoId] = useState(null);
+  const [nuevaCantidad, setNuevaCantidad] = useState("");
+
+  async function guardarCantidad(id) {
+    setError("");
+    const valor = parseFloat(nuevaCantidad);
+    if (Number.isNaN(valor) || valor < 0) {
+      setError("La cantidad debe ser un número mayor o igual a 0.");
+      return;
+    }
+    try {
+      await api.actualizarCantidadInsumo(session.token, id, valor);
+      setEditandoId(null);
+      cargar();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
 
   function cargar() {
     api
@@ -79,15 +98,17 @@ export default function Inventario() {
       <div className="bg-white border border-slate-200 rounded-xl p-5">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-sm font-semibold text-navy">Insumos</h3>
-          <button
-            onClick={() => setMostrarForm((v) => !v)}
-            className="bg-orange text-white text-sm font-semibold px-4 py-2 rounded-lg"
-          >
-            + Agregar insumo
-          </button>
+          {esAdmin && (
+            <button
+              onClick={() => setMostrarForm((v) => !v)}
+              className="bg-orange text-white text-sm font-semibold px-4 py-2 rounded-lg"
+            >
+              + Agregar insumo
+            </button>
+          )}
         </div>
 
-        {mostrarForm && (
+        {esAdmin && mostrarForm && (
           <form onSubmit={handleSubmit} className="bg-cream rounded-lg p-4 mb-4 grid grid-cols-2 gap-3">
             <input
               placeholder="Nombre (ej: Mantequilla)"
@@ -139,18 +160,44 @@ export default function Inventario() {
               <th>Nivel mínimo</th>
               <th>Proveedor</th>
               <th>Estado</th>
+              {esAdmin && <th></th>}
             </tr>
           </thead>
           <tbody>
             {insumos.map((i) => (
               <tr key={i.id} className={`border-b border-slate-50 ${i.nivel === "bajo" ? "bg-red-50" : ""}`}>
                 <td className="py-2">{i.nombre}</td>
-                <td>{i.cantidad_disponible} {i.unidad}</td>
+                <td>
+                  {editandoId === i.id ? (
+                    <span className="flex gap-1 items-center">
+                      <input
+                        type="number"
+                        value={nuevaCantidad}
+                        onChange={(e) => setNuevaCantidad(e.target.value)}
+                        className="border border-slate-200 rounded px-2 py-1 w-24 text-sm"
+                      />
+                      <button onClick={() => guardarCantidad(i.id)} className="text-xs text-green-700 font-semibold">Guardar</button>
+                      <button onClick={() => setEditandoId(null)} className="text-xs text-slate-500">Cancelar</button>
+                    </span>
+                  ) : (
+                    <>{i.cantidad_disponible} {i.unidad}</>
+                  )}
+                </td>
                 <td>{i.nivel_minimo} {i.unidad}</td>
                 <td>{i.proveedor_nombre || "—"}</td>
                 <td>
                   <NivelBadge nivel={i.nivel} />
                 </td>
+                {esAdmin && (
+                  <td>
+                    <button
+                      onClick={() => { setEditandoId(i.id); setNuevaCantidad(String(i.cantidad_disponible)); }}
+                      className="text-xs text-navy underline"
+                    >
+                      Actualizar cantidad
+                    </button>
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>

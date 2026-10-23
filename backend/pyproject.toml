@@ -9,3 +9,12 @@ select = ["E", "F", "W", "I", "N"]
 ignore = ["E501"]  # el largo de línea ya se controla con line-length
 
 [tool.ruff.lint.pep8-naming]
+
+[tool.coverage.run]
+source = ["app"]
+branch = false
+
+[tool.coverage.report]
+# Piso de cobertura que exige el pipeline de CI (Sprint 2, extra "control de coverage").
+fail_under = 85
+show_missing = true
