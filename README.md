@@ -8,8 +8,8 @@ Proyecto Integrador 2, Universidad EAFIT, 2026-2. Equipo: Valentina Zapata (back
 
 | | Link |
 |---|---|
-| Aplicación (frontend en Vercel) | **PENDIENTE: pegar el link de Vercel** |
-| API (backend en Render) | **PENDIENTE: pegar el link de Render**`/docs` |
+| Aplicación (frontend en Vercel) | **https://la-amassadera.vercel.app** |
+| API (backend en Render) | https://amassadera-api.onrender.com (documentación en `/docs`) |
 
 > El backend está en el plan gratuito de Render: si nadie lo usa por 15 minutos se "duerme", y la primera entrada después de eso puede tardar alrededor de un minuto. Después funciona normal.
 
