@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
 import { api } from "../api/client";
 
@@ -15,6 +16,9 @@ export default function Ventas() {
   const [importando, setImportando] = useState(false);
   const [avisoImportacion, setAvisoImportacion] = useState("");
   const fileInputRef = useRef(null);
+  const navigate = useNavigate();
+  // Ids de las ventas del último pedido registrado, para poder facturarlo (HU-12)
+  const [ultimoPedido, setUltimoPedido] = useState([]);
 
   function cargar() {
     Promise.all([api.getRecetas(session.token), api.getVentas(session.token)])
@@ -46,20 +50,22 @@ export default function Ventas() {
     e.preventDefault();
     setError("");
     setConfirmacion("");
+    setUltimoPedido([]);
     const validas = lineas.filter((l) => l.receta_nombre && parseInt(l.cantidad, 10) > 0);
     if (!distribuidor.trim() || validas.length === 0) {
       setError("Agrega el distribuidor y al menos un producto con cantidad.");
       return;
     }
     try {
+      let registradas;
       if (validas.length === 1) {
-        await api.registrarVenta(session.token, {
+        registradas = [await api.registrarVenta(session.token, {
           distribuidor_nombre: distribuidor,
           receta_nombre: validas[0].receta_nombre,
           cantidad: parseInt(validas[0].cantidad, 10),
-        });
+        })];
       } else {
-        await api.registrarVentasLote(session.token, {
+        registradas = await api.registrarVentasLote(session.token, {
           distribuidor_nombre: distribuidor,
           lineas: validas.map((l) => ({
             receta_nombre: l.receta_nombre,
@@ -68,6 +74,7 @@ export default function Ventas() {
         });
       }
       setConfirmacion("Venta registrada. Inventario actualizado automáticamente según cada receta.");
+      setUltimoPedido(registradas.map((v) => v.id));
       setLineas([{ receta_nombre: recetas[0]?.nombre || "", cantidad: "" }]);
       setAvisoImportacion("");
       cargar();
@@ -97,6 +104,16 @@ export default function Ventas() {
     }
   }
 
+  async function facturarPedido() {
+    setError("");
+    try {
+      const factura = await api.generarFactura(session.token, ultimoPedido);
+      navigate(`/facturas/${factura.id}`);
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
   return (
     <div>
       <h2 className="text-2xl font-bold text-navy mb-1">Registrar venta / pedido</h2>
@@ -112,6 +129,10 @@ export default function Ventas() {
           disabled={importando}
           className="w-full text-sm"
         />
+        <p className="text-slate-500 text-xs mt-2">
+          Funciona mejor con las facturas y pedidos de La Amassadera, en una foto derecha y con buena luz.
+          Facturas de otras tiendas (por ejemplo, de supermercados) pueden no leerse. Siempre revisa lo que se llenó antes de guardar.
+        </p>
         {importando && <p className="text-slate-500 text-xs mt-2">Leyendo factura...</p>}
         {avisoImportacion && (
           <p className="text-navy text-xs mt-2 bg-cream rounded-lg px-3 py-2">{avisoImportacion}</p>
@@ -161,7 +182,16 @@ export default function Ventas() {
         </button>
 
         {error && <p className="text-red-600 text-xs mb-3">{error}</p>}
-        {confirmacion && <p className="text-green-700 text-xs mb-3 bg-green-50 rounded-lg px-3 py-2">{confirmacion}</p>}
+        {confirmacion && (
+          <div className="text-green-700 text-xs mb-3 bg-green-50 rounded-lg px-3 py-2">
+            {confirmacion}
+            {ultimoPedido.length > 0 && (
+              <button type="button" onClick={facturarPedido} className="block mt-2 bg-navy text-white font-semibold px-3 py-1.5 rounded-lg">
+                Generar factura de este pedido
+              </button>
+            )}
+          </div>
+        )}
 
         <button type="submit" className="w-full bg-orange text-white font-semibold rounded-lg py-2.5 text-sm">
           Registrar venta

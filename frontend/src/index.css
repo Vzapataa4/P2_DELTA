@@ -2,7 +2,36 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Pruebas de usabilidad (21/10/2026): pidieron letra más grande. Tailwind
+   mide todo en rem, así que subir la base de 16px a 17px agranda textos,
+   botones y espacios de forma pareja en toda la app. */
+html {
+  font-size: 17px;
+}
+
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
   background: #faf9f6;
+}
+
+/* Al imprimir una factura (HU-12) solo sale la factura, sin el menú. */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  .app-shell {
+    height: auto;
+    display: block;
+  }
+  .app-shell main {
+    overflow: visible;
+    padding: 0;
+  }
+  .factura {
+    border: none;
+    max-width: none;
+  }
+  body {
+    background: white;
+  }
 }

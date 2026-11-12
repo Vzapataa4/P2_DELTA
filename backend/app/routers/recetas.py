@@ -61,6 +61,25 @@ def listar_recetas(
     return [_to_out(r) for r in db.query(models.Receta).order_by(models.Receta.nombre).all()]
 
 
+@router.patch("/{receta_id}/precio", response_model=schemas.RecetaOut)
+def actualizar_precio(
+    receta_id: int,
+    data: schemas.RecetaPrecioUpdate,
+    db: Session = Depends(get_db),
+    _user: models.Usuario = Depends(auth.require_admin),
+):
+    """Sprint 3 (salió escribiendo el manual de usuario): poder definir o
+    cambiar el precio de venta de una receta que ya existe. Las ventas ya
+    registradas conservan el precio con el que se hicieron."""
+    receta = db.get(models.Receta, receta_id)
+    if not receta:
+        raise HTTPException(status_code=404, detail="La receta no existe")
+    receta.precio_venta = data.precio_venta
+    db.commit()
+    db.refresh(receta)
+    return _to_out(receta)
+
+
 @router.post("", response_model=schemas.RecetaOut, status_code=201)
 def registrar_receta(
     data: schemas.RecetaCreate,

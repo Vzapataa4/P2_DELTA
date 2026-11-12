@@ -11,6 +11,9 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 # de la base de datos de desarrollo (amassadera.db).
 _db_fd, _db_path = tempfile.mkstemp(suffix=".db")
 os.environ["DATABASE_URL"] = f"sqlite:///{_db_path}"
+# Las pruebas nunca llaman a la API real de Claude, aunque el .env local
+# tenga la key: así siempre se prueba la regla de respaldo (determinista).
+os.environ["ANTHROPIC_API_KEY"] = ""
 
 from fastapi.testclient import TestClient  # noqa: E402
 

@@ -91,4 +91,17 @@ export const api = {
   importarFactura: (token, file) => requestFile("/api/ventas/importar-factura", { file, token }),
   getDashboard: (token) => request("/api/dashboard", { token }),
   getRecomendaciones: (token) => request("/api/ia/recomendaciones", { token }),
+  // Sprint 3
+  registrarCompra: (token, data) => request("/api/compras", { method: "POST", body: data, token }),
+  getCompras: (token, filtros) => request(`/api/compras${qs(filtros)}`, { token }),
+  getComprasPorProveedor: (token, filtros) => request(`/api/compras/por-proveedor${qs(filtros)}`, { token }),
+  generarFactura: (token, ventaIds) =>
+    request("/api/facturas", { method: "POST", body: { venta_ids: ventaIds }, token }),
+  getFactura: (token, id) => request(`/api/facturas/${id}`, { token }),
+  getFacturas: (token) => request("/api/facturas", { token }),
+  getVentasFacturadas: (token) => request("/api/facturas/ventas-facturadas", { token }),
+  compararPeriodos: (token, rangos) => request(`/api/dashboard/comparar${qs(rangos)}`, { token }),
+  actualizarPrecioReceta: (token, id, precio) =>
+    request(`/api/recetas/${id}/precio`, { method: "PATCH", body: { precio_venta: precio }, token }),
+  getIdeasMarketing: (token) => request("/api/ia/marketing", { token }),
 };

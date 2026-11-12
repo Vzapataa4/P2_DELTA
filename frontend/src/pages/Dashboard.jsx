@@ -25,7 +25,8 @@ export default function Dashboard() {
   if (!data) return <p className="text-slate-500 text-sm">Cargando...</p>;
 
   const periodoActivo = PERIODOS.find((p) => p.key === periodo);
-  const serie = data[periodoActivo.campo] || [];
+  // Lo más reciente primero: es lo que el dueño mira a diario.
+  const serie = [...(data[periodoActivo.campo] || [])].reverse();
 
   return (
     <div>
@@ -64,7 +65,7 @@ export default function Dashboard() {
                 <li key={item[periodoActivo.clave]} className="flex justify-between">
                   <span className="text-slate-500">{item[periodoActivo.clave]}</span>
                   <span className="font-semibold text-navy">
-                    ${item.total.toLocaleString("es-CO")}
+                    ${item.total.toLocaleString("es-CO", { maximumFractionDigits: 0 })}
                   </span>
                 </li>
               ))}
@@ -117,7 +118,7 @@ export default function Dashboard() {
                   <td className="py-2">{d.distribuidor}</td>
                   <td>{d.producto_top}</td>
                   <td>{d.unidades_producto_top} uds</td>
-                  <td className="font-semibold text-navy">${d.ganancia_total.toLocaleString("es-CO")}</td>
+                  <td className="font-semibold text-navy">${d.ganancia_total.toLocaleString("es-CO", { maximumFractionDigits: 0 })}</td>
                 </tr>
               ))}
             </tbody>
