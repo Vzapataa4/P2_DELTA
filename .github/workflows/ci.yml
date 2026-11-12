@@ -61,7 +61,7 @@ jobs:
         working-directory: frontend
         run: |
           npm run build
-          nohup npx vite preview --port 4173 > ../frontend.log 2>&1 &
+          nohup npx vite preview --host 127.0.0.1 --port 4173 > ../frontend.log 2>&1 &
       - name: Esperar a que respondan
         run: |
           for i in $(seq 1 30); do
