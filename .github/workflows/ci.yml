@@ -34,3 +34,42 @@ jobs:
       - run: npm install
       - run: npm run lint
       - run: npm run build
+
+  # Sprint 3: pruebas E2E en navegador (frontend + backend juntos)
+  e2e:
+    runs-on: ubuntu-latest
+    needs: [backend, frontend]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Instalar dependencias
+        run: |
+          pip install -r backend/requirements.txt -r e2e/requirements.txt
+          python -m playwright install --with-deps chromium
+          cd frontend && npm install
+      - name: Levantar backend
+        working-directory: backend
+        run: |
+          python -c "from app.seed import run; run()"
+          nohup uvicorn app.main:app --port 8000 > ../backend.log 2>&1 &
+      - name: Levantar frontend
+        working-directory: frontend
+        run: |
+          npm run build
+          nohup npx vite preview --port 4173 > ../frontend.log 2>&1 &
+      - name: Esperar a que respondan
+        run: |
+          for i in $(seq 1 30); do
+            curl -sf http://127.0.0.1:8000/api/health && curl -sf http://127.0.0.1:4173 > /dev/null && exit 0
+            sleep 2
+          done
+          cat backend.log frontend.log; exit 1
+      - name: Correr pruebas E2E
+        env:
+          APP_URL: http://127.0.0.1:4173
+        run: python -m pytest e2e -v

@@ -1,6 +1,6 @@
-# La Amassadera Inteligente — Backend (Sprint 1 MVP)
+# La Amassadera Inteligente — Backend
 
-API REST en FastAPI que implementa las 11 historias de usuario del Sprint 1 (ver Wiki_Backlog_Completo.md).
+API REST en FastAPI con las historias de usuario de los Sprints 1, 2 y 3 (ver la Wiki del proyecto). Ver también el README de la raíz del repositorio.
 
 ## Cómo correrlo localmente
 
@@ -26,7 +26,9 @@ La API queda en `http://127.0.0.1:8000`. Documentación interactiva (Swagger) en
 
 ## Base de datos
 
-Por defecto usa SQLite (`amassadera.db`), cero configuración. Para usar PostgreSQL en producción, solo se cambia la variable `DATABASE_URL` en `.env` (ej. `postgresql://usuario:clave@host:5432/amassadera`) — el resto del código no cambia, gracias a SQLAlchemy.
+Por defecto usa SQLite (`amassadera.db`), cero configuración. En producción (Render) usa PostgreSQL: solo cambia la variable `DATABASE_URL` (ej. `postgresql://usuario:clave@host:5432/amassadera`) — el resto del código no cambia, gracias a SQLAlchemy.
+
+`python3 -m app.demo_data` agrega compras y ventas de demostración de los últimos 60 días (distribuidores ficticios), solo si la base no tiene ventas.
 
 ## Pruebas
 
@@ -34,7 +36,7 @@ Por defecto usa SQLite (`amassadera.db`), cero configuración. Para usar Postgre
 python3 -m pytest tests/ -v
 ```
 
-16 casos de prueba automatizados cubriendo las 11 historias de Sprint 1 (happy path + flujo alterno). Ver `Wiki_Casos_de_Prueba.md` para la tabla completa de criterios de aceptación y su relación con cada caso de prueba.
+53 pruebas automáticas (Sprint 1: 25, Sprint 2: 14, Sprint 3: 14), cada historia con happy path y flujo alterno. La tabla HU → criterio de aceptación → caso de prueba está en la Wiki.
 
 ## Calidad de código
 
@@ -54,6 +56,7 @@ backend/
 │   ├── auth.py           # login, hash de contraseñas, JWT, roles
 │   ├── ia.py              # Módulo de IA (API de Claude + fallback)
 │   ├── seed.py            # datos de ejemplo
+│   ├── demo_data.py       # ventas y compras de demostración
 │   └── routers/           # endpoints por recurso
 ├── tests/                  # casos de prueba (pytest)
 ├── requirements.txt

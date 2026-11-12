@@ -1,4 +1,5 @@
 import math
+from collections import defaultdict
 from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends
@@ -65,3 +66,39 @@ def recetas_sugeridas(
             )
         )
     return sorted(sugeridas, key=lambda s: (-s.unidades_vendidas_30d, -s.ganancia_unitaria, s.receta))
+
+
+@router.get("/marketing", response_model=list[schemas.IdeaMarketingOut])
+def ideas_marketing(
+    db: Session = Depends(get_db), _user: models.Usuario = Depends(auth.require_admin)
+):
+    """HU-22 Sugerir ideas de marketing a partir de las ventas de los
+    últimos 30 días comparadas con los 30 anteriores."""
+    ahora = datetime.utcnow()
+    corte = ahora - timedelta(days=30)
+    corte_previo = ahora - timedelta(days=60)
+
+    unid_prod = defaultdict(int)
+    dist = defaultdict(lambda: {"unidades_30d": 0, "unidades_30d_previos": 0, "ganancia_30d": 0.0})
+    for v in db.query(models.Venta).filter(models.Venta.fecha >= corte_previo).all():
+        nombre = v.distribuidor_nombre or "Sin distribuidor"
+        if v.fecha >= corte:
+            unid_prod[v.receta_id] += v.cantidad
+            dist[nombre]["unidades_30d"] += v.cantidad
+            dist[nombre]["ganancia_30d"] += v.total - v.receta.costo_total * v.cantidad
+        else:
+            dist[nombre]["unidades_30d_previos"] += v.cantidad
+
+    productos = [
+        {
+            "nombre": r.nombre,
+            "ganancia_unitaria": round(r.ganancia_unitaria, 2),
+            "unidades_30d": unid_prod.get(r.id, 0),
+        }
+        for r in db.query(models.Receta).order_by(models.Receta.nombre).all()
+    ]
+    distribuidores = [
+        {"nombre": n, **{k: (round(v, 2) if isinstance(v, float) else v) for k, v in d.items()}}
+        for n, d in sorted(dist.items())
+    ]
+    return ia.generar_ideas_marketing(productos, distribuidores)

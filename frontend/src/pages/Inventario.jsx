@@ -4,6 +4,9 @@ import { api } from "../api/client";
 
 const UNIDADES = ["gr", "ml", "unid"];
 
+// Evita mostrar cosas como "3901.2999999 gr" después de varios descuentos.
+const cant = (n) => Number(n.toFixed(1)).toLocaleString("es-CO");
+
 // Alertas de inventario por nivel con color, pedidas por Mauricio en el
 // Acta de Compromiso del 5 de agosto de 2026: Ok (verde), Medio
 // (naranjado), Bajo (rojo).
@@ -180,10 +183,10 @@ export default function Inventario() {
                       <button onClick={() => setEditandoId(null)} className="text-xs text-slate-500">Cancelar</button>
                     </span>
                   ) : (
-                    <>{i.cantidad_disponible} {i.unidad}</>
+                    <>{cant(i.cantidad_disponible)} {i.unidad}</>
                   )}
                 </td>
-                <td>{i.nivel_minimo} {i.unidad}</td>
+                <td>{cant(i.nivel_minimo)} {i.unidad}</td>
                 <td>{i.proveedor_nombre || "—"}</td>
                 <td>
                   <NivelBadge nivel={i.nivel} />
@@ -202,6 +205,11 @@ export default function Inventario() {
             ))}
           </tbody>
         </table>
+        <div className="flex flex-wrap gap-4 mt-4 text-xs text-slate-500">
+          <span><NivelBadge nivel="ok" /> hay suficiente</span>
+          <span><NivelBadge nivel="medio" /> se está acabando, planea la compra</span>
+          <span><NivelBadge nivel="bajo" /> por debajo del mínimo, compra ya</span>
+        </div>
       </div>
     </div>
   );

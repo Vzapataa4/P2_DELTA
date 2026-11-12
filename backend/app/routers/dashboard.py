@@ -1,7 +1,7 @@
 from collections import defaultdict
-from datetime import datetime
+from datetime import date, datetime, time
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from .. import auth, models, schemas
@@ -87,4 +87,74 @@ def panel_principal(
         ventas_por_mes=ventas_por_mes,
         productos_mas_vendidos=productos_mas_vendidos,
         analisis_distribuidores=analisis_distribuidores,
+    )
+
+
+def _variacion(actual: float, anterior: float):
+    """Variación porcentual de A frente a B. Si B es 0 no hay con qué
+    comparar (sería dividir por cero), así que se devuelve None y la
+    interfaz muestra "sin datos" en vez de un porcentaje inventado."""
+    if not anterior:
+        return None
+    return round((actual - anterior) / anterior * 100, 1)
+
+
+def _resumen(db: Session, desde: date, hasta: date):
+    ventas = (
+        db.query(models.Venta)
+        .filter(models.Venta.fecha >= datetime.combine(desde, time.min))
+        .filter(models.Venta.fecha <= datetime.combine(hasta, time.max))
+        .all()
+    )
+    por_producto = defaultdict(int)
+    ganancia = 0.0
+    for v in ventas:
+        por_producto[v.receta.nombre] += v.cantidad
+        ganancia += v.total - v.receta.costo_total * v.cantidad
+    resumen = schemas.ResumenPeriodo(
+        desde=desde,
+        hasta=hasta,
+        numero_ventas=len(ventas),
+        unidades=sum(v.cantidad for v in ventas),
+        ingresos=round(sum(v.total for v in ventas), 2),
+        ganancia=round(ganancia, 2),
+    )
+    return resumen, por_producto
+
+
+@router.get("/comparar", response_model=schemas.ComparacionPeriodosOut)
+def comparar_periodos(
+    a_desde: date,
+    a_hasta: date,
+    b_desde: date,
+    b_hasta: date,
+    db: Session = Depends(get_db),
+    _user: models.Usuario = Depends(auth.require_admin),
+):
+    """HU-18 Comparar periodos de venta. El periodo A normalmente es el
+    actual (ej. este mes) y el B el de referencia (ej. el mes pasado)."""
+    if a_desde > a_hasta or b_desde > b_hasta:
+        raise HTTPException(
+            status_code=400, detail="En cada periodo la fecha inicial debe ser anterior a la final"
+        )
+    resumen_a, prod_a = _resumen(db, a_desde, a_hasta)
+    resumen_b, prod_b = _resumen(db, b_desde, b_hasta)
+
+    productos = [
+        schemas.ComparacionProducto(
+            producto=nombre,
+            unidades_a=prod_a.get(nombre, 0),
+            unidades_b=prod_b.get(nombre, 0),
+            variacion_pct=_variacion(prod_a.get(nombre, 0), prod_b.get(nombre, 0)),
+        )
+        for nombre in set(prod_a) | set(prod_b)
+    ]
+    productos.sort(key=lambda p: (-p.unidades_a, -p.unidades_b, p.producto))
+
+    return schemas.ComparacionPeriodosOut(
+        periodo_a=resumen_a,
+        periodo_b=resumen_b,
+        variacion_ingresos_pct=_variacion(resumen_a.ingresos, resumen_b.ingresos),
+        variacion_unidades_pct=_variacion(resumen_a.unidades, resumen_b.unidades),
+        productos=productos,
     )

@@ -1,5 +1,7 @@
 """Datos semilla: usuario administrador de prueba + insumos y recetas reales
 tomados de las fichas técnicas de La Amassadera (ver formulas la AMASSADERA.xlsx)."""
+import os
+
 from . import models
 from .auth import hash_password
 from .database import Base, SessionLocal, engine
@@ -56,6 +58,9 @@ def _precio_venta_demo(insumos_receta):
 
 
 def run():
+    # En el despliegue las contraseñas de los usuarios iniciales se pueden
+    # cambiar con SEED_ADMIN_PASSWORD y SEED_EMPLEADO_PASSWORD (ver la página
+    # de Despliegue en la Wiki). Los valores por defecto son solo para local.
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
     try:
@@ -63,13 +68,13 @@ def run():
             db.add(models.Usuario(
                 nombre="Mauricio Acosta Zapata",
                 correo="mauricio@laamassadera.com",
-                contrasena_hash=hash_password("Amassadera2026"),
+                contrasena_hash=hash_password(os.getenv("SEED_ADMIN_PASSWORD", "Amassadera2026")),
                 rol=models.RolUsuario.ADMIN,
             ))
             db.add(models.Usuario(
                 nombre="Personal de Producción",
                 correo="empleado@laamassadera.com",
-                contrasena_hash=hash_password("Produccion2026"),
+                contrasena_hash=hash_password(os.getenv("SEED_EMPLEADO_PASSWORD", "Produccion2026")),
                 rol=models.RolUsuario.EMPLEADO,
             ))
 

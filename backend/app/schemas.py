@@ -1,5 +1,5 @@
 """Esquemas Pydantic (validación de entrada/salida de la API)."""
-from datetime import datetime
+from datetime import date, datetime
 from typing import List, Optional
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
@@ -189,3 +189,89 @@ class RecetaSugeridaOut(BaseModel):
     ganancia_unitaria: float
     motivo: str
     fuente: str  # "regla": hoy se calcula con una regla sobre inventario y ventas
+
+
+# ================= Sprint 3 =================
+# ---------- HU-07 Compras por proveedor ----------
+class CompraCreate(BaseModel):
+    insumo_nombre: str = Field(min_length=1)
+    cantidad: float = Field(gt=0)
+    costo_total: float = Field(ge=0)
+    # Si no se manda, se usa el proveedor que ya tiene asignado el insumo.
+    proveedor_nombre: Optional[str] = None
+
+
+class CompraOut(BaseModel):
+    id: int
+    fecha: datetime
+    proveedor: str
+    insumo: str
+    cantidad: float
+    unidad: str
+    costo_total: float
+
+
+class ComprasProveedorOut(BaseModel):
+    proveedor: str
+    numero_compras: int
+    total_gastado: float
+    insumos: List[str]
+    ultima_compra: Optional[datetime] = None
+
+
+# ---------- Editar precio de venta de una receta ----------
+class RecetaPrecioUpdate(BaseModel):
+    precio_venta: float = Field(ge=0)
+
+
+# ---------- HU-12 Factura básica ----------
+class FacturaCreate(BaseModel):
+    venta_ids: List[int] = Field(min_length=1)
+
+
+class FacturaLinea(BaseModel):
+    producto: str
+    cantidad: int
+    precio_unitario: float
+    subtotal: float
+
+
+class FacturaOut(BaseModel):
+    id: int
+    numero: str
+    fecha: datetime
+    distribuidor_nombre: str
+    lineas: List[FacturaLinea]
+    total: float
+
+
+# ---------- HU-18 Comparar periodos ----------
+class ResumenPeriodo(BaseModel):
+    desde: date
+    hasta: date
+    numero_ventas: int
+    unidades: int
+    ingresos: float
+    ganancia: float
+
+
+class ComparacionProducto(BaseModel):
+    producto: str
+    unidades_a: int
+    unidades_b: int
+    variacion_pct: Optional[float] = None
+
+
+class ComparacionPeriodosOut(BaseModel):
+    periodo_a: ResumenPeriodo
+    periodo_b: ResumenPeriodo
+    variacion_ingresos_pct: Optional[float] = None  # None si el periodo B no tuvo ventas
+    variacion_unidades_pct: Optional[float] = None
+    productos: List[ComparacionProducto]
+
+
+# ---------- HU-22 Ideas de marketing ----------
+class IdeaMarketingOut(BaseModel):
+    titulo: str
+    idea: str
+    fuente: str  # "ia" o "regla"

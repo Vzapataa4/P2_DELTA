@@ -1,0 +1,40 @@
+# Blueprint de Render: crea el backend (FastAPI) y la base de datos PostgreSQL.
+# En Render: New > Blueprint > elegir este repositorio. Ver la página
+# "Despliegue" de la Wiki para el paso a paso completo.
+services:
+  - type: web
+    name: amassadera-api
+    runtime: python
+    rootDir: backend
+    plan: free
+    branch: main
+    autoDeploy: true # cada merge a main se despliega solo
+    buildCommand: pip install -r requirements.txt
+    # seed.run() solo crea los usuarios, insumos y recetas iniciales si la base está vacía
+    startCommand: python -c "from app.seed import run; run()" && uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: DATABASE_URL
+        fromDatabase:
+          name: amassadera-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true # Render inventa una clave larga y aleatoria
+      - key: ALLOWED_ORIGINS
+        sync: false # se llena a mano: la URL del frontend en Vercel
+      - key: ANTHROPIC_API_KEY
+        sync: false # se llena a mano; sin ella la app usa las reglas locales
+      - key: CLAUDE_MODEL
+        value: claude-sonnet-5-5
+      - key: SEED_ADMIN_PASSWORD
+        sync: false
+      - key: SEED_EMPLEADO_PASSWORD
+        sync: false
+
+databases:
+  - name: amassadera-db
+    plan: free
+    databaseName: amassadera
+    user: amassadera

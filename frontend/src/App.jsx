@@ -11,6 +11,8 @@ import IA from "./pages/IA";
 import Historial from "./pages/Historial";
 import Analisis from "./pages/Analisis";
 import Usuarios from "./pages/Usuarios";
+import Compras from "./pages/Compras";
+import Factura from "./pages/Factura";
 
 function RutaPrivada({ children, soloAdmin = false }) {
   const { session } = useAuth();
@@ -32,6 +34,8 @@ function AppRoutes() {
       <Route path="/historial" element={<RutaPrivada soloAdmin><Historial /></RutaPrivada>} />
       <Route path="/analisis" element={<RutaPrivada soloAdmin><Analisis /></RutaPrivada>} />
       <Route path="/usuarios" element={<RutaPrivada soloAdmin><Usuarios /></RutaPrivada>} />
+      <Route path="/compras" element={<RutaPrivada soloAdmin><Compras /></RutaPrivada>} />
+      <Route path="/facturas/:id" element={<RutaPrivada soloAdmin><Factura /></RutaPrivada>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

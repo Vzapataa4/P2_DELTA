@@ -2,7 +2,7 @@
 import enum
 from datetime import datetime
 
-from sqlalchemy import Column, DateTime, Float, ForeignKey, Integer, String
+from sqlalchemy import Column, DateTime, Float, ForeignKey, Integer, String, Table
 from sqlalchemy import Enum as SAEnum
 from sqlalchemy.orm import relationship
 
@@ -121,3 +121,53 @@ class Venta(Base):
     total = Column(Float, nullable=False, default=0)
 
     receta = relationship("Receta")
+
+
+# ================= Sprint 3 =================
+# Todo lo nuevo de este sprint son tablas NUEVAS (no columnas en tablas que ya
+# existían). Así create_all() las crea solo, sin migraciones, tanto en la base
+# local como en la de producción.
+
+
+class Compra(Base):
+    """HU-07: una compra de insumo a un proveedor. Al registrarla se suma la
+    cantidad al inventario (antes eso se hacía a mano con HU-06)."""
+
+    __tablename__ = "compras"
+
+    id = Column(Integer, primary_key=True, index=True)
+    fecha = Column(DateTime, default=datetime.utcnow)
+    proveedor_id = Column(Integer, ForeignKey("proveedores.id"), nullable=False)
+    insumo_id = Column(Integer, ForeignKey("insumos.id"), nullable=False)
+    cantidad = Column(Float, nullable=False)
+    costo_total = Column(Float, nullable=False, default=0)
+
+    proveedor = relationship("Proveedor")
+    insumo = relationship("Insumo")
+
+
+# Una factura agrupa una o varias ventas (las líneas de un mismo pedido).
+factura_ventas = Table(
+    "factura_ventas",
+    Base.metadata,
+    Column("factura_id", Integer, ForeignKey("facturas.id"), primary_key=True),
+    Column("venta_id", Integer, ForeignKey("ventas.id"), primary_key=True, unique=True),
+)
+
+
+class Factura(Base):
+    """HU-12: factura básica de un pedido para entregar al distribuidor.
+    No reemplaza la factura electrónica de la DIAN, es un comprobante."""
+
+    __tablename__ = "facturas"
+
+    id = Column(Integer, primary_key=True, index=True)
+    fecha = Column(DateTime, default=datetime.utcnow)
+    distribuidor_nombre = Column(String, nullable=False)
+    total = Column(Float, nullable=False, default=0)
+
+    ventas = relationship("Venta", secondary=factura_ventas)
+
+    @property
+    def numero(self) -> str:
+        return f"FAC-{self.id:04d}"

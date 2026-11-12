@@ -12,6 +12,24 @@ export default function Recetas() {
   const [precioVenta, setPrecioVenta] = useState("");
   const [lineas, setLineas] = useState([{ insumo_nombre: "", cantidad_requerida: "" }]);
   const [formError, setFormError] = useState("");
+  const [editandoPrecio, setEditandoPrecio] = useState(null);
+  const [nuevoPrecio, setNuevoPrecio] = useState("");
+
+  async function guardarPrecio(id) {
+    setError("");
+    const valor = parseFloat(nuevoPrecio);
+    if (Number.isNaN(valor) || valor < 0) {
+      setError("El precio debe ser un número mayor o igual a 0.");
+      return;
+    }
+    try {
+      await api.actualizarPrecioReceta(session.token, id, valor);
+      setEditandoPrecio(null);
+      cargar();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
   const [importando, setImportando] = useState(false);
   const [avisoImportacion, setAvisoImportacion] = useState("");
   const fileInputRef = useRef(null);
@@ -183,7 +201,7 @@ export default function Recetas() {
             </button>
 
             <div className="bg-white rounded-lg px-4 py-2 text-sm font-semibold text-navy mb-3">
-              Costo estimado por unidad: ${costoEstimado.toLocaleString("es-CO")}
+              Costo estimado por unidad: ${costoEstimado.toLocaleString("es-CO", { maximumFractionDigits: 0 })}
             </div>
 
             <label className="block text-xs font-semibold text-slate-600 mb-1.5">
@@ -200,7 +218,7 @@ export default function Recetas() {
               <div className="bg-white rounded-lg px-4 py-2 text-sm font-semibold mb-3">
                 Ganancia estimada por unidad:{" "}
                 <span className={parseFloat(precioVenta) - costoEstimado >= 0 ? "text-green-700" : "text-red-600"}>
-                  ${(parseFloat(precioVenta) - costoEstimado).toLocaleString("es-CO")}
+                  ${(parseFloat(precioVenta) - costoEstimado).toLocaleString("es-CO", { maximumFractionDigits: 0 })}
                 </span>
               </div>
             )}
@@ -234,16 +252,37 @@ export default function Recetas() {
                     })
                     .join(", ")}
                 </td>
-                <td className="font-semibold text-navy">${r.costo_total.toLocaleString("es-CO")}</td>
+                <td className="font-semibold text-navy">${r.costo_total.toLocaleString("es-CO", { maximumFractionDigits: 0 })}</td>
                 <td>
-                  {r.precio_venta != null ? (
-                    `$${r.precio_venta.toLocaleString("es-CO")}`
+                  {editandoPrecio === r.id ? (
+                    <span className="flex gap-1 items-center">
+                      <input
+                        type="number"
+                        value={nuevoPrecio}
+                        onChange={(e) => setNuevoPrecio(e.target.value)}
+                        className="border border-slate-200 rounded px-2 py-1 w-24 text-sm"
+                      />
+                      <button onClick={() => guardarPrecio(r.id)} className="text-xs text-green-700 font-semibold">Guardar</button>
+                      <button onClick={() => setEditandoPrecio(null)} className="text-xs text-slate-500">Cancelar</button>
+                    </span>
                   ) : (
-                    <span className="text-slate-400 text-xs">Sin definir</span>
+                    <>
+                      {r.precio_venta != null ? (
+                        `$${r.precio_venta.toLocaleString("es-CO", { maximumFractionDigits: 0 })}`
+                      ) : (
+                        <span className="text-slate-400 text-xs">Sin definir</span>
+                      )}
+                      <button
+                        onClick={() => { setEditandoPrecio(r.id); setNuevoPrecio(r.precio_venta != null ? String(r.precio_venta) : ""); }}
+                        className="block text-xs text-navy underline"
+                      >
+                        Editar precio
+                      </button>
+                    </>
                   )}
                 </td>
                 <td className={`font-semibold ${r.ganancia_unitaria > 0 ? "text-green-700" : "text-slate-400"}`}>
-                  ${r.ganancia_unitaria.toLocaleString("es-CO")}
+                  ${r.ganancia_unitaria.toLocaleString("es-CO", { maximumFractionDigits: 0 })}
                 </td>
               </tr>
             ))}

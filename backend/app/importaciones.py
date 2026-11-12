@@ -34,7 +34,7 @@ from .schemas import (
 logger = logging.getLogger(__name__)
 
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
-CLAUDE_MODEL = os.getenv("CLAUDE_MODEL", "claude-sonnet-5")
+CLAUDE_MODEL = os.getenv("CLAUDE_MODEL", "claude-sonnet-5-5")
 IA_TIMEOUT_SECONDS = 15
 
 _MEDIA_TYPES_VALIDOS = {"image/jpeg", "image/png", "image/webp", "image/gif"}
